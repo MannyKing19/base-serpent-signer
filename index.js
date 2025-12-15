@@ -5,6 +5,10 @@ import crypto from "crypto";
 
 dotenv.config();
 const app = express();
+
+// ✅ Health check for Render + app connection test
+app.get("/health", (req, res) => res.json({ status: "ok" }));
+
 app.use(cors());
 app.use(express.json());
 
@@ -36,4 +40,6 @@ app.post("/sign-xp", (req, res) => {
   }
 });
 
-app.listen(PORT, () => console.log(`✅ Signer server listening on port ${PORT}`));
+app.listen(PORT, () =>
+  console.log(`✅ Signer server listening on port ${PORT}`)
+);
