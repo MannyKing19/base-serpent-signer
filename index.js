@@ -26,6 +26,4 @@ app.get("/health", (req, res) => res.json({ status: "ok" }));
 // ✅ Version endpoint
 app.get("/version", (req, res) => res.json({ version: "1.0.0" }));
 
-// ✅ Base route
-app.get("/", (req, res) => {
-  res.send("Base Serpent Signer Server running successfully with CO
+// ✅ Base route (fixed s
