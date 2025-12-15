@@ -9,7 +9,12 @@ const app = express();
 // ✅ Health check for Render + app connection test
 app.get("/health", (req, res) => res.json({ status: "ok" }));
 
-app.use(cors());
+// ✅ Explicit CORS configuration for browser access
+app.use(cors({ 
+  origin: "*", 
+  methods: ["GET", "POST"], 
+  allowedHeaders: ["Content-Type"] 
+}));
 app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
