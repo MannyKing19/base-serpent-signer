@@ -36,9 +36,23 @@ app.get("/", (req, res) => {
 app.post("/sign-xp", (req, res) => {
   try {
     const { player, xp, timestamp } = req.body;
-    if (!player || !xp || !timestamp || !SIGNER_PRIVATE_KEY)
+    if (!player || !xp || !timestamp || !SIGNER_PRIVATE_KEY) {
       return res.status(400).send("Missing data");
+    }
 
     const payload = `${player}:${xp}:${timestamp}`;
     const signature = crypto
-      .create
+      .createHmac("sha256", SIGNER_PRIVATE_KEY)
+      .update(payload)
+      .digest("hex");
+
+    res.json({ signature });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Error signing XP data");
+  }
+});
+
+app.listen(PORT, () => {
+  console.log(`✅ Signer server listening on port ${PORT}`);
+});
