@@ -1,50 +1,31 @@
-import express from "express";
-import dotenv from "dotenv";
-import cors from "cors";
-import crypto from "crypto";
+const express = require("express");
+const crypto = require("crypto");
+const cors = require("cors");
+require("dotenv").config();
 
-dotenv.config();
 const app = express();
-
-// ✅ Health check for Render + app connection test
-app.get("/health", (req, res) => res.json({ status: "ok" }));
-
-// ✅ Explicit CORS configuration for browser access
-app.use(cors({ 
-  origin: "*", 
-  methods: ["GET", "POST"], 
-  allowedHeaders: ["Content-Type"] 
-}));
-app.use(express.json());
-
 const PORT = process.env.PORT || 3000;
 const SIGNER_PRIVATE_KEY = process.env.SIGNER_PRIVATE_KEY;
 
-// simple home route
-app.get("/", (req, res) => {
-  res.send("Base Serpent Signer Server running successfully!");
-});
-
-// sign XP verification payload
-app.post("/sign-xp", (req, res) => {
-  try {
-    const { player, xp, timestamp } = req.body;
-    if (!player || !xp || !timestamp || !SIGNER_PRIVATE_KEY)
-      return res.status(400).send("Missing data");
-
-    const payload = `${player}:${xp}:${timestamp}`;
-    const signature = crypto
-      .createHmac("sha256", SIGNER_PRIVATE_KEY)
-      .update(payload)
-      .digest("hex");
-
-    res.json({ signature });
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Error signing XP data");
+// ✅ Persistent CORS configuration
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Content-Type");
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(200);
   }
+  next();
 });
+app.use(cors());
+app.use(express.json());
 
-app.listen(PORT, () =>
-  console.log(`✅ Signer server listening on port ${PORT}`)
-);
+// ✅ Health check
+app.get("/health", (req, res) => res.json({ status: "ok" }));
+
+// ✅ Version endpoint
+app.get("/version", (req, res) => res.json({ version: "1.0.0" }));
+
+// ✅ Base route
+app.get("/", (req, res) => {
+  res.send("Base Serpent Signer Server running successfully with CO
