@@ -9,7 +9,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const SIGNER_PRIVATE_KEY = process.env.SIGNER_PRIVATE_KEY;
 
-// ✅ Robust CORS configuration for browsers
+// ✅ Robust CORS configuration
 app.use(cors({
   origin: "*",
   methods: ["GET", "POST", "OPTIONS"],
@@ -22,22 +22,29 @@ app.options("*", cors());
 app.use(express.json());
 
 // ✅ Health check endpoint
-app.get("/health", (req, res) => res.json({ status: "ok" }));
+app.get("/health", (req, res) => {
+  res.setHeader("Content-Type", "application/json");
+  res.json({ status: "ok" });
+});
 
 // ✅ Version endpoint
-app.get("/version", (req, res) => res.json({ version: "1.0.0" }));
+app.get("/version", (req, res) => {
+  res.setHeader("Content-Type", "application/json");
+  res.json({ version: "1.0.0" });
+});
 
 // ✅ Base route
 app.get("/", (req, res) => {
-  res.send("Base Serpent Signer Server running successfully with robust CORS!");
+  res.send("Base Serpent Signer Server running successfully with robust CORS and JSON headers!");
 });
 
 // ✅ XP signing endpoint
 app.post("/sign-xp", (req, res) => {
   try {
+    res.setHeader("Content-Type", "application/json"); // Important for browser/frontend
     const { player, xp, timestamp } = req.body;
     if (!player || !xp || !timestamp || !SIGNER_PRIVATE_KEY) {
-      return res.status(400).send("Missing data");
+      return res.status(400).json({ error: "Missing data" });
     }
 
     const payload = `${player}:${xp}:${timestamp}`;
@@ -49,7 +56,7 @@ app.post("/sign-xp", (req, res) => {
     res.json({ signature });
   } catch (err) {
     console.error(err);
-    res.status(500).send("Error signing XP data");
+    res.status(500).json({ error: "Error signing XP data" });
   }
 });
 
