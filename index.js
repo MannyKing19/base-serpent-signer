@@ -41,7 +41,7 @@ app.get("/", (req, res) => {
 // ✅ XP signing endpoint
 app.post("/sign-xp", (req, res) => {
   try {
-    res.setHeader("Content-Type", "application/json"); // Important for browser/frontend
+    res.setHeader("Content-Type", "application/json");
     const { player, xp, timestamp } = req.body;
     if (!player || !xp || !timestamp || !SIGNER_PRIVATE_KEY) {
       return res.status(400).json({ error: "Missing data" });
@@ -57,6 +57,29 @@ app.post("/sign-xp", (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Error signing XP data" });
+  }
+});
+
+// ✅ Mint signature endpoint
+app.post("/requestSignature", (req, res) => {
+  try {
+    res.setHeader("Content-Type", "application/json");
+    const { address, nonce } = req.body;
+    if (!address || !nonce || !SIGNER_PRIVATE_KEY) {
+      return res.status(400).json({ error: "Missing data" });
+    }
+
+    const payload = `${address}:${nonce}`;
+    const signature = crypto
+      .createHmac("sha256", SIGNER_PRIVATE_KEY)
+      .update(payload)
+      .digest("hex");
+
+    const expiresAt = Date.now() + 10 * 60 * 1000; // 10-minute expiry
+    res.json({ signature, nonce, expiresAt });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Error generating signature" });
   }
 });
 
