@@ -60,11 +60,17 @@ app.post("/sign-xp", (req, res) => {
   }
 });
 
-// ✅ Mint signature endpoint
+// ✅ Mint signature endpoint (supports frontend using "player" key too)
 app.post("/requestSignature", (req, res) => {
   try {
     res.setHeader("Content-Type", "application/json");
-    const { address, nonce } = req.body;
+
+    // Accept either "address" or "player" from frontend
+    const address = req.body.address || req.body.player;
+    const nonce = req.body.nonce;
+
+    console.log("Incoming /requestSignature body:", req.body);
+
     if (!address || !nonce || !SIGNER_PRIVATE_KEY) {
       return res.status(400).json({ error: "Missing data" });
     }
