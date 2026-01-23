@@ -1,13 +1,16 @@
 import express from "express";
-import crypto from "crypto";
 import cors from "cors";
 import dotenv from "dotenv";
+import { ethers } from "ethers";
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const SIGNER_PRIVATE_KEY = process.env.SIGNER_PRIVATE_KEY;
+
+// Create wallet for signing
+const wallet = new ethers.Wallet(SIGNER_PRIVATE_KEY);
 
 // ✅ Robust CORS configuration
 app.use(cors({
@@ -48,10 +51,9 @@ app.post("/sign-xp", (req, res) => {
     }
 
     const payload = `${player}:${xp}:${timestamp}`;
-    const signature = crypto
-      .createHmac("sha256", SIGNER_PRIVATE_KEY)
-      .update(payload)
-      .digest("hex");
+    const signature = ethers.utils.hexlify(
+      ethers.utils.sha256(ethers.utils.toUtf8Bytes(payload))
+    );
 
     res.json({ signature });
   } catch (err) {
@@ -60,12 +62,11 @@ app.post("/sign-xp", (req, res) => {
   }
 });
 
-// ✅ Mint signature endpoint (supports frontend using "player" key too)
-app.post("/requestSignature", (req, res) => {
+// ✅ Mint signature endpoint using EIP-712
+app.post("/requestSignature", async (req, res) => {
   try {
     res.setHeader("Content-Type", "application/json");
 
-    // Accept either "address" or "player" from frontend
     const address = req.body.address || req.body.player;
     const nonce = req.body.nonce;
 
@@ -75,13 +76,34 @@ app.post("/requestSignature", (req, res) => {
       return res.status(400).json({ error: "Missing data" });
     }
 
-    const payload = `${address}:${nonce}`;
-    const signature = crypto
-      .createHmac("sha256", SIGNER_PRIVATE_KEY)
-      .update(payload)
-      .digest("hex");
+    // EIP-712 Domain
+    const domain = {
+      name: "Base Serpent",
+      version: "1",
+      chainId: 8453,
+      verifyingContract: "0x1e4c6aA2f17f593b0843b2Ad93ec9520a596C910",
+    };
+
+    // Types for EIP-712
+    const types = {
+      Mint: [
+        { name: "to", type: "address" },
+        { name: "nonce", type: "uint256" },
+      ],
+    };
+
+    // Value to sign
+    const value = {
+      to: address,
+      nonce: nonce,
+    };
+
+    // Sign typed data
+    const signature = await wallet._signTypedData(domain, types, value);
 
     const expiresAt = Date.now() + 10 * 60 * 1000; // 10-minute expiry
+    console.log(`✅ Signature response sent: ${address}`);
+
     res.json({ signature, nonce, expiresAt });
   } catch (err) {
     console.error(err);
