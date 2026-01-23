@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import { ethers } from "ethers";
+import { Wallet } from "ethers";
 
 dotenv.config();
 
@@ -10,7 +10,7 @@ const PORT = process.env.PORT || 3000;
 const SIGNER_PRIVATE_KEY = process.env.SIGNER_PRIVATE_KEY;
 
 // Create wallet for signing
-const wallet = new ethers.Wallet(SIGNER_PRIVATE_KEY);
+const wallet = new Wallet(SIGNER_PRIVATE_KEY);
 
 // ✅ Robust CORS configuration
 app.use(cors({
@@ -51,9 +51,7 @@ app.post("/sign-xp", (req, res) => {
     }
 
     const payload = `${player}:${xp}:${timestamp}`;
-    const signature = ethers.utils.hexlify(
-      ethers.utils.sha256(ethers.utils.toUtf8Bytes(payload))
-    );
+    const signature = wallet.signMessage(payload);
 
     res.json({ signature });
   } catch (err) {
@@ -98,8 +96,8 @@ app.post("/requestSignature", async (req, res) => {
       nonce: nonce,
     };
 
-    // Sign typed data
-    const signature = await wallet._signTypedData(domain, types, value);
+    // Sign typed data using ethers v6 method
+    const signature = await wallet.signTypedData(domain, types, value);
 
     const expiresAt = Date.now() + 10 * 60 * 1000; // 10-minute expiry
     console.log(`✅ Signature response sent: ${address}`);
